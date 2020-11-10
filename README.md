@@ -1,5 +1,5 @@
 # FPGA_as_a_Service
-This repository will host FPGA_as_a_Service related projects.
+This repository will host OPENCAPI_as_a_Service related projects.
 
 ## Contents
 | Name                   |  Description |
