@@ -1,4 +1,4 @@
-# FPGA_as_a_Service
+# OPENCAPI_as_a_Service
 This repository will host OPENCAPI_as_a_Service related projects.
 
 ## Contents
