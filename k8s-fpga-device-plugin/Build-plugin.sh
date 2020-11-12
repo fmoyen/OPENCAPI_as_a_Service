@@ -60,7 +60,7 @@ docker images | grep $docker_repository
 
 echo; echo "========================================================"
 echo "Pushing the docker images to the docker hub"
-docker push ${docker_repository}:$docker_tag ${docker_repository}:latest
+docker push ${docker_repository}:$docker_tag
 docker push ${docker_repository}:latest
 
 echo; echo "========================================================"
