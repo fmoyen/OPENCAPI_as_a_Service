@@ -24,6 +24,8 @@ spec:
   selector:
     matchLabels:
       name: xilinx-fpga-device-plugin
+  nodeSelector:
+    kubernetes.io/arch: ppc64le
   template:
     metadata:
       annotations:
