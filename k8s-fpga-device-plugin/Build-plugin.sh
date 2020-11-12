@@ -1,20 +1,36 @@
 #!/bin/bash
 
-echo
+docker_repository="fmoyen/xilinx-fpga-device-plugin-ppc64"
+docker_tag="v1.1"
+ScriptDir=`realpath $0`
+ScriptDir=`dirname $ScriptDir`
+
+echo; echo "===================================================================================================="
+echo "===================================================================================================="
 echo "For generating the plugin daemonset this script $0 will use following steps:"
 echo
-echo " - After edit the code, run the bash script build"
+echo " - Run the bash script build (after you edit the code)"
 echo " - Run docker command docker build -t [docker-repository]:[docker-tag] . to create a docker image of the new daemonset"
 echo " - Check the new generating daemonset docker image with command docker images"
 echo " - Push the new docker image to a public dockerhub repository,  if needed to push/pull from a private docker repository you can reference https://kubernetes.io/docs/concepts/containers/images/#using-a-private-registry"
 echo " - Change the containers image of fpga-device-plugin.yml to the new generating docker images (already done)"
 echo " - Use command kubectl create -f fpga-device-plugin.yml to create the new daemonset"
 echo
+echo "This script will use the following dockerhub repository: $docker_repository"
+echo
 
-docker_repository="fmoyen/xilinx-fpga-device-plugin-ppc64"
-docker_tag="v1.1"
-ScriptDir=`realpath $0`
-ScriptDir=`dirname $ScriptDir`
+
+echo; echo "========================================================"
+echo "Getting the tag level"
+echo;echo "Locally known images:"
+docker images | grep $docker_repository
+
+echo; echo -e "Which tag do you want to create ?: \c"
+read docker_tag
+if [[ -z $docker_tag ]]; then
+   echo "You didn't provide any tag. Exiting..."
+   exit 1
+fi
 
 echo; echo "========================================================"
 echo "Building the binary"
