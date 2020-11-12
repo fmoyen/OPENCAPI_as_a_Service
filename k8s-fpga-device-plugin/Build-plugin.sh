@@ -19,6 +19,17 @@ echo
 echo "This script will use the following dockerhub repository: $docker_repository"
 echo
 
+echo; echo "========================================================"
+echo "Checking local architecture"
+LocalArchitecture=`lscpu | grep Architecture`
+echo $LocalArchitecture
+
+if echo $LocalArchitecture | grep ppc64le >/dev/null; then 
+   echo "Running on Power platform... Continuing !"
+else
+   echo "Not Running on Power platform... Exiting !"; echo
+   exit 2
+fi
 
 echo; echo "========================================================"
 echo "Getting the tag level"
@@ -28,7 +39,7 @@ docker images | grep $docker_repository
 echo; echo -e "Which tag do you want to create ?: \c"
 read docker_tag
 if [[ -z $docker_tag ]]; then
-   echo "You didn't provide any tag. Exiting..."
+   echo "You didn't provide any tag. Exiting..."; echo
    exit 1
 fi
 
@@ -61,3 +72,4 @@ echo "kubectl get daemonset -A"
 
 echo; echo "========================================================"
 echo "Bye !"
+echo
