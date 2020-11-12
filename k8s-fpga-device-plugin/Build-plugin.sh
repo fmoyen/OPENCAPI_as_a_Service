@@ -1,7 +1,6 @@
 #!/bin/bash
 
 docker_repository="fmoyen/xilinx-fpga-device-plugin-ppc64"
-docker_tag="v1.1"
 ScriptDir=`realpath $0`
 ScriptDir=`dirname $ScriptDir`
 
