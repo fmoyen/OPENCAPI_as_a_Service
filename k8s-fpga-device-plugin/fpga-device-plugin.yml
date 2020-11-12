@@ -24,8 +24,6 @@ spec:
   selector:
     matchLabels:
       name: xilinx-fpga-device-plugin
-  nodeSelector:
-    kubernetes.io/arch: ppc64le
   template:
     metadata:
       annotations:
@@ -46,6 +44,8 @@ spec:
         volumeMounts:
           - name: device-plugin
             mountPath: /var/lib/kubelet/device-plugins
+      nodeSelector:
+        kubernetes.io/arch: ppc64le
       volumes:
         - name: device-plugin
           hostPath:
