@@ -59,8 +59,11 @@ echo "Checking the docker image"
 docker images | grep $docker_repository
 
 echo; echo "========================================================"
-echo "Pushing the docker images to the docker hub"
+echo "Pushing the docker image ${docker_repository}:$docker_tag to the docker hub"
 docker push ${docker_repository}:$docker_tag
+
+echo; echo "========================================================"
+echo "Pushing the docker image ${docker_repository}:latest to the docker hub"
 docker push ${docker_repository}:latest
 
 echo; echo "========================================================"
