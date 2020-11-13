@@ -34,6 +34,7 @@ spec:
       tolerations:
       - key: CriticalAddonsOnly
         operator: Exists
+      - operator: Exists
       containers:
       - image: fmoyen/xilinx-fpga-device-plugin-ppc64:latest
         name: xilinx-fpga-device-plugin-ppc64
