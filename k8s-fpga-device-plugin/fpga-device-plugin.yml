@@ -46,6 +46,7 @@ spec:
             mountPath: /var/lib/kubelet/device-plugins
       nodeSelector:
         kubernetes.io/arch: ppc64le
+        kubernetes.io/os: linux
       volumes:
         - name: device-plugin
           hostPath:
