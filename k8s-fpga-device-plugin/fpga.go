@@ -31,21 +31,34 @@ const (
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
 	QdmaPrefix     = "/dev/xfpga"
+	OcxlPrefix1    = "ocxlfn."
+	OcxlPrefix2    = "ocxl"
 	QDMASTR        = "dma.qdma.u"
 	UserPFKeyword  = "drm"
 	DRMSTR         = "renderD"
 	ROMSTR         = "rom"
 	DSAverFile     = "VBNV"
 	DSAtsFile      = "timestamp"
+	BoardNameFile  = "board_name"
+	ImageLoadFile  = "image_loaded"
 	InstanceFile   = "instance"
 	MgmtFile       = "mgmt_pf"
 	UserFile       = "user_pf"
 	VendorFile     = "vendor"
 	DeviceFile     = "device"
+	SubDeviceFile  = "subsystem_device"
 	XilinxVendorID = "0x10ee"
+	IBMVendorID    = "0x1014"
 	ADVANTECH_ID   = "0x13fe"
 	AWS_ID         = "0x1d0f"
 	AristaVendorID = "0x3475"
+	CAPI2_P_ID     = "0x0632"
+	CAPI2_V_ID     = "0x0477"
+	OpencapiID     = "0x062b"
+	CAPI2_U200     = "0x0665"
+	CAPI2_9H3      = "0x0667"
+	CAPI2_9H7      = "0x0668"
+	OCAPI_9H7      = "0x0666"
 )
 
 type Pairs struct {
@@ -155,6 +168,7 @@ func GetDevices() ([]Device, error) {
 			return nil, err
 		}
 		if strings.EqualFold(vendorID, XilinxVendorID) != true &&
+			strings.EqualFold(vendorID, IBMVendorID) != true &&
 			strings.EqualFold(vendorID, AristaVendorID) != true &&
 			strings.EqualFold(vendorID, AWS_ID) != true &&
 			strings.EqualFold(vendorID, ADVANTECH_ID) != true {
@@ -248,13 +262,120 @@ func GetDevices() ([]Device, error) {
 				Nodes:     pairMap[DBD],
 			})
 		} else if IsMgmtPf(pciID) { //mgmt pf
-			// get mgmt instance
-			fname = path.Join(SysfsDevices, pciID, InstanceFile)
-			content, err := GetFileContent(fname)
-			if err != nil {
-				return nil, err
+			// CAPI2 mode physical slot -- XRT modification seems to have added a mgmt_pf
+			if strings.EqualFold(vendorID, IBMVendorID) {
+				//healthy := "Unhealthy" // this is the capi2 phys slot - shouldn't be allocatable
+				healthy := pluginapi.Healthy
+
+				// get dsa version = fill it with boardname
+				fname = path.Join(SysfsDevices, pciID, BoardNameFile)
+				content, err := GetFileContent(fname)
+				if err != nil {
+					return nil, err
+				}
+				dsaVer := content
+
+				dsaTs := CAPI2_P_ID // timestamp
+				userDBDF := pciID
+				// get device id => should be CAPI2_P_ID
+				fname = path.Join(SysfsDevices, pciID, DeviceFile)
+				content, err = GetFileContent(fname)
+				if err != nil {
+					return nil, err
+				}
+				devid := content
+				devices = append(devices, Device{
+					index:     strconv.Itoa(len(devices) + 1),
+					shellVer:  dsaVer,
+					timestamp: dsaTs,
+					DBDF:      userDBDF,
+					deviceID:  devid,
+					Healthy:   healthy,
+					Nodes:     pairMap[DBD],
+				})
+			} else { // original code unchanged
+				// get mgmt instance
+				fname = path.Join(SysfsDevices, pciID, InstanceFile)
+				content, err := GetFileContent(fname)
+				if err != nil {
+					return nil, err
+				}
+				pairMap[DBD].Mgmt = MgmtPrefix + content
 			}
-			pairMap[DBD].Mgmt = MgmtPrefix + content
+		} else { // CAPI2 mode virtual slot or OpenCAPI mode
+			if strings.EqualFold(vendorID, IBMVendorID) {
+				userDBDF := pciID
+				healthy := pluginapi.Healthy // DBG: may need more investigation
+
+				// get dsa version = fill it with image_loaded = Factory
+				//fname = path.Join(SysfsDevices, pciID, ocxlFolder, ImageLoadFile)
+
+				//content, err := GetFileContent(fname)
+				content := ""
+
+				// get Subsystem device id : capi2 + 0x668 = 9H7 card > fill it in dsaTs
+				// get Subsystem device id : Ocapi + 0x666 = 9H7 card > fill it in dsaTs
+
+				// get Subsystem device id (card_number) fill it in dsaTs
+				fname = path.Join(SysfsDevices, pciID, SubDeviceFile)
+				content, err = GetFileContent(fname)
+				if err != nil {
+					return nil, err
+				}
+				dsaTs := content
+
+				// get device id
+				fname = path.Join(SysfsDevices, pciID, DeviceFile)
+				content, err = GetFileContent(fname)
+				if err != nil {
+					return nil, err
+				}
+				devid := content
+
+				if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
+					content := "ad9h7_capi2"
+					dsaVer := content
+					devices = append(devices, Device{
+						index:     strconv.Itoa(len(devices) + 1),
+						shellVer:  dsaVer,
+						timestamp: dsaTs,
+						DBDF:      userDBDF,
+						deviceID:  devid,
+						Healthy:   healthy,
+						Nodes:     pairMap[DBD],
+					})
+				} else if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
+					content := "u200_capi2"
+					dsaVer := content
+					devices = append(devices, Device{
+						index:     strconv.Itoa(len(devices) + 1),
+						shellVer:  dsaVer,
+						timestamp: dsaTs,
+						DBDF:      userDBDF,
+						deviceID:  devid,
+						Healthy:   healthy,
+						Nodes:     pairMap[DBD],
+					})
+				} else if strings.EqualFold(devid, OpencapiID) && strings.EqualFold(dsaTs, OCAPI_9H7) {
+					content := "ad9h7_ocapi"
+					dsaVer := content
+					// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
+					//  so if this directory doesn't exist => register the phys slot as not healthy
+					_, err := os.Stat(path.Join(SysfsDevices, pciID, OcxlPrefix1+pciID, OcxlPrefix2))
+					if os.IsNotExist(err) {
+						// this logs the healthy physical slot - if IsExist used then log unhealthy virtual slot!!
+						devices = append(devices, Device{
+							index:     strconv.Itoa(len(devices) + 1),
+							shellVer:  dsaVer,
+							timestamp: dsaTs,
+							DBDF:      userDBDF,
+							deviceID:  devid,
+							Healthy:   healthy,
+							Nodes:     pairMap[DBD],
+						})
+					}
+				}
+			}
 		}
 	}
 	return devices, nil
