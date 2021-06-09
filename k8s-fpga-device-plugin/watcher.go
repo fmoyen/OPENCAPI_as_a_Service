@@ -1,10 +1,10 @@
 package main
 
 import (
+	log "github.com/Sirupsen/logrus"
 	"github.com/fsnotify/fsnotify"
 	"os"
 	"os/signal"
-	log "github.com/Sirupsen/logrus"
 )
 
 func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
