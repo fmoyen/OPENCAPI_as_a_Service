@@ -18,6 +18,7 @@ func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	for _, f := range files {
 		err = watcher.Add(f)
 		if err != nil {
+			log.Println("watcher.Add failure for file: ", f)
 			watcher.Close()
 			return nil, err
 		}
