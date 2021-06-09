@@ -4,12 +4,15 @@ import (
 	"github.com/fsnotify/fsnotify"
 	"os"
 	"os/signal"
+	log "github.com/Sirupsen/logrus"
 )
 
 func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
+	} else {
+		log.Println("watcher created. ERR=", err)
 	}
 
 	for _, f := range files {
