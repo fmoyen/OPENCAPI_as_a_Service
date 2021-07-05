@@ -48,6 +48,7 @@ spec:
       nodeSelector:
         kubernetes.io/arch: ppc64le
         kubernetes.io/os: linux
+        node-role.kubernetes.io/worker:
       volumes:
         - name: device-plugin
           hostPath:
