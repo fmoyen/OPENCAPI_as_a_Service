@@ -37,6 +37,10 @@ func main() {
 		log.SetLevel(log.InfoLevel)
 	}
 
+	// FABDEBUG
+	log.SetLevel(log.DebugLevel)
+	// FABDEBUG END
+
 	log.Println("Starting FS watcher.")
 	watcher, err := newFSWatcher(pluginapi.DevicePluginPath)
 	if err != nil {
