@@ -119,6 +119,7 @@ func (m *FPGADevicePlugin) checkDeviceUpdate(n map[string]map[string]Device) {
 		m.devices[aDevType] = aDevices
 		m.servers[aDevType] = devicePluginServer
 		go func(aDevType string, aDevices map[string]Device, name string) {
+			log.Debugf("Serve function called from checkDeviceUpdate")
 			if err := m.servers[aDevType].Serve(name); err != nil {
 				log.Println("Could not contact Kubelet, Exit. Did you enable the device plugin feature gate?")
 				os.Exit(1)
@@ -207,6 +208,7 @@ func (m *FPGADevicePluginServer) Start() error {
 	m.server = grpc.NewServer()
 	pluginapi.RegisterDevicePluginServer(m.server, m)
 
+	log.Debugf("Serve function called from Start")
 	go m.server.Serve(sock)
 
 	// Wait for the server to start
@@ -320,22 +322,26 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			// When containers are on top of VM, it is possible only user PF is assigned
 			// to VM, so the Mgmt is empty. Don't add it to cgroup in that case
 			if dev.Nodes.Mgmt != "" {
+				log.Debugf("Mgmt Devices ContainerPath: %s", dev.Nodes.Mgmt)
 				cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
 					HostPath:      dev.Nodes.Mgmt,
 					ContainerPath: dev.Nodes.Mgmt,
 					Permissions:   "rwm",
 				})
+				log.Debugf("Mgmt Mount ContainerPath: %s", dev.Nodes.Mgmt)
 				cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
 					HostPath:      dev.Nodes.Mgmt,
 					ContainerPath: dev.Nodes.Mgmt,
 					ReadOnly:      false,
 				})
 			}
+			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User)
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
 				HostPath:      dev.Nodes.User,
 				ContainerPath: dev.Nodes.User,
 				Permissions:   "rwm",
 			})
+			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User)
 			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
 				HostPath:      dev.Nodes.User,
 				ContainerPath: dev.Nodes.User,
@@ -354,6 +360,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 					ReadOnly:      false,
 				})
 			}
+			log.Printf("Receiving request %s - DONE", id)
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cres)
 	}
