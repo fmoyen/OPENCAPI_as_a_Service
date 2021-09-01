@@ -336,15 +336,25 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 				})
 			}
 			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User)
+			//cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
+			//	HostPath:      dev.Nodes.User,
+			//	ContainerPath: dev.Nodes.User,
+			//	Permissions:   "rwm",
+			//})
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
-				HostPath:      dev.Nodes.User,
-				ContainerPath: dev.Nodes.User,
+				HostPath:      "/dev/null",
+				ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
 				Permissions:   "rwm",
 			})
 			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User)
+			//cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
+			//	HostPath:      dev.Nodes.User,
+			//	ContainerPath: dev.Nodes.User,
+			//	ReadOnly:      false,
+			//})
 			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
-				HostPath:      dev.Nodes.User,
-				ContainerPath: dev.Nodes.User,
+				HostPath:      "/dev/null",
+				ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
 				ReadOnly:      false,
 			})
 			// if this device supports qdma, assign the qdma node to pod too
