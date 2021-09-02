@@ -110,11 +110,9 @@ func (m *FPGADevicePlugin) checkDeviceUpdate(n map[string]map[string]Device) {
 		added[nDevType] = nDevices
 	}
 
-	// FABDEBUG
-	log.Debugf("added FPGA device list: %v", added)
-	log.Debugf("removed FPGA device list: %v", removed)
-	log.Debugf("updated FPGA device list: %v", updated)
-	// FABDEBUG END
+	//log.Debugf("added FPGA device list: %v", added)
+	//log.Debugf("removed FPGA device list: %v", removed)
+	//log.Debugf("updated FPGA device list: %v", updated)
 	//create new server for added devices
 	for aDevType, aDevices := range added {
 		devicePluginServer := m.NewFPGADevicePluginServer(aDevType, aDevices)
