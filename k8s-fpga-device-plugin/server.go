@@ -110,9 +110,11 @@ func (m *FPGADevicePlugin) checkDeviceUpdate(n map[string]map[string]Device) {
 		added[nDevType] = nDevices
 	}
 
-	//log.Debugf("added FPGA device list: %v", added)
-	//log.Debugf("removed FPGA device list: %v", removed)
-	//log.Debugf("updated FPGA device list: %v", updated)
+	// FABDEBUG
+	log.Debugf("added FPGA device list: %v", added)
+	log.Debugf("removed FPGA device list: %v", removed)
+	log.Debugf("updated FPGA device list: %v", updated)
+	// FABDEBUG END
 	//create new server for added devices
 	for aDevType, aDevices := range added {
 		devicePluginServer := m.NewFPGADevicePluginServer(aDevType, aDevices)
@@ -342,7 +344,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			//	Permissions:   "rwm",
 			//})
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
-				HostPath:      "/dev/null",
+				HostPath:      path.Join("/var/run/udev/data/+pci:", id),
 				ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
 				Permissions:   "rwm",
 			})
@@ -353,7 +355,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			//	ReadOnly:      false,
 			//})
 			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
-				HostPath:      "/dev/null",
+				HostPath:      path.Join("/var/run/udev/data/+pci:", id),
 				ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
 				ReadOnly:      false,
 			})
