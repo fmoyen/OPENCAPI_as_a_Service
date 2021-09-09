@@ -39,8 +39,7 @@ spec:
       - image: fmoyen/xilinx-fpga-device-plugin-ppc64:latest
         name: xilinx-fpga-device-plugin-ppc64
         securityContext:
-          allowPrivilegeEscalation: true
-          privileged: true
+          allowPrivilegeEscalation: false
           capabilities:
             drop: ["ALL"]
         volumeMounts:
