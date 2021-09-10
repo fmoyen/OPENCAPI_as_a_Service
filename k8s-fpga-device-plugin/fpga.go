@@ -341,12 +341,15 @@ func GetDevices() ([]Device, error) {
 				devid := content
 
 				// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
-				card_name, err := GetFileNameFromPrefix(path.Join(SysfsDevices, pciID, "cxl"), CXLCardSTR)
-				if err != nil {
-					return nil, err
+				SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
+				var CXLDevFullPath string
+				if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
+					card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
+					capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
+					CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
+				} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
+					CXLDevFullPath = ""
 				}
-				capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
-				CXLDevFullPath := path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
 
 				if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
 					content := "ad9h7_capi2"
