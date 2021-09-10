@@ -344,8 +344,10 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
 				//HostPath:      path.Join("/var/run/udev/data/+pci:", id),
 				//ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
-				HostPath:      path.Join("/dev/cxl/afu0.0m"),
-				ContainerPath: path.Join("/dev/cxl/afu0.0m"),
+				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
+				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
+				HostPath:      dev.CXLDevAFUPath,
+				ContainerPath: dev.CXLDevAFUPath,  
 				Permissions:   "rwm",
 			})
 			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User)
@@ -357,8 +359,10 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
 				//HostPath:      path.Join("/var/run/udev/data/+pci:", id),
 				//ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
-				HostPath:      path.Join("/dev/cxl/afu0.0m"),
-				ContainerPath: path.Join("/dev/cxl/afu0.0m"),
+				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
+				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
+				HostPath:      dev.CXLDevAFUPath,
+				ContainerPath: dev.CXLDevAFUPath,  
 				ReadOnly:      false,
 			})
 			// if this device supports qdma, assign the qdma node to pod too

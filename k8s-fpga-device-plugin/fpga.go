@@ -18,16 +18,21 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 	"os"
 	"path"
 	"strconv"
 	"strings"
 	"time"
+
+	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
 const (
 	SysfsDevices   = "/sys/bus/pci/devices"
+	CXLDevDir      = "/dev/cxl"
+	CXLPrefix1     = "afu"
+	CXLPrefix2     = ".0m"
+	CXLCardSTR     = "card"
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
 	QdmaPrefix     = "/dev/xfpga"
@@ -68,13 +73,14 @@ type Pairs struct {
 }
 
 type Device struct {
-	index     string
-	shellVer  string
-	timestamp string
-	DBDF      string // this is for user pf
-	deviceID  string //devid of the user pf
-	Healthy   string
-	Nodes     *Pairs
+	index         string
+	shellVer      string
+	timestamp     string
+	DBDF          string // this is for user pf
+	deviceID      string //devid of the user pf
+	Healthy       string
+	Nodes         *Pairs
+	CXLDevAFUPath string
 }
 
 func GetInstance(DBDF string) (string, error) {
@@ -253,13 +259,14 @@ func GetDevices() ([]Device, error) {
 			//so far, return Healthy
 			healthy := pluginapi.Healthy
 			devices = append(devices, Device{
-				index:     strconv.Itoa(len(devices) + 1),
-				shellVer:  dsaVer,
-				timestamp: dsaTs,
-				DBDF:      userDBDF,
-				deviceID:  devid,
-				Healthy:   healthy,
-				Nodes:     pairMap[DBD],
+				index:         strconv.Itoa(len(devices) + 1),
+				shellVer:      dsaVer,
+				timestamp:     dsaTs,
+				DBDF:          userDBDF,
+				deviceID:      devid,
+				Healthy:       healthy,
+				Nodes:         pairMap[DBD],
+				CXLDevAFUPath: "",
 			})
 		} else if IsMgmtPf(pciID) { //mgmt pf
 			// CAPI2 mode physical slot -- XRT modification seems to have added a mgmt_pf
@@ -285,13 +292,14 @@ func GetDevices() ([]Device, error) {
 				}
 				devid := content
 				devices = append(devices, Device{
-					index:     strconv.Itoa(len(devices) + 1),
-					shellVer:  dsaVer,
-					timestamp: dsaTs,
-					DBDF:      userDBDF,
-					deviceID:  devid,
-					Healthy:   healthy,
-					Nodes:     pairMap[DBD],
+					index:         strconv.Itoa(len(devices) + 1),
+					shellVer:      dsaVer,
+					timestamp:     dsaTs,
+					DBDF:          userDBDF,
+					deviceID:      devid,
+					Healthy:       healthy,
+					Nodes:         pairMap[DBD],
+					CXLDevAFUPath: "",
 				})
 			} else { // original code unchanged
 				// get mgmt instance
@@ -332,29 +340,39 @@ func GetDevices() ([]Device, error) {
 				}
 				devid := content
 
+				// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
+				card_name, err := GetFileNameFromPrefix(path.Join(SysfsDevices, pciID, "cxl"), CXLCardSTR)
+				if err != nil {
+					return nil, err
+				}
+				capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
+				CXLDevFullPath := path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
+
 				if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
 					content := "ad9h7_capi2"
 					dsaVer := content
 					devices = append(devices, Device{
-						index:     strconv.Itoa(len(devices) + 1),
-						shellVer:  dsaVer,
-						timestamp: dsaTs,
-						DBDF:      userDBDF,
-						deviceID:  devid,
-						Healthy:   healthy,
-						Nodes:     pairMap[DBD],
+						index:         strconv.Itoa(len(devices) + 1),
+						shellVer:      dsaVer,
+						timestamp:     dsaTs,
+						DBDF:          userDBDF,
+						deviceID:      devid,
+						Healthy:       healthy,
+						Nodes:         pairMap[DBD],
+						CXLDevAFUPath: CXLDevFullPath,
 					})
 				} else if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
 					content := "u200_capi2"
 					dsaVer := content
 					devices = append(devices, Device{
-						index:     strconv.Itoa(len(devices) + 1),
-						shellVer:  dsaVer,
-						timestamp: dsaTs,
-						DBDF:      userDBDF,
-						deviceID:  devid,
-						Healthy:   healthy,
-						Nodes:     pairMap[DBD],
+						index:         strconv.Itoa(len(devices) + 1),
+						shellVer:      dsaVer,
+						timestamp:     dsaTs,
+						DBDF:          userDBDF,
+						deviceID:      devid,
+						Healthy:       healthy,
+						Nodes:         pairMap[DBD],
+						CXLDevAFUPath: CXLDevFullPath,
 					})
 				} else if strings.EqualFold(devid, OpencapiID) && strings.EqualFold(dsaTs, OCAPI_9H7) {
 					content := "ad9h7_ocapi"
@@ -365,13 +383,14 @@ func GetDevices() ([]Device, error) {
 					if os.IsNotExist(err) {
 						// this logs the healthy physical slot - if IsExist used then log unhealthy virtual slot!!
 						devices = append(devices, Device{
-							index:     strconv.Itoa(len(devices) + 1),
-							shellVer:  dsaVer,
-							timestamp: dsaTs,
-							DBDF:      userDBDF,
-							deviceID:  devid,
-							Healthy:   healthy,
-							Nodes:     pairMap[DBD],
+							index:         strconv.Itoa(len(devices) + 1),
+							shellVer:      dsaVer,
+							timestamp:     dsaTs,
+							DBDF:          userDBDF,
+							deviceID:      devid,
+							Healthy:       healthy,
+							Nodes:         pairMap[DBD],
+							CXLDevAFUPath: "",
 						})
 					}
 				}
