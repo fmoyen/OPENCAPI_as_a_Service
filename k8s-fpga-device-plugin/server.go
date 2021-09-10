@@ -347,7 +347,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
 				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
 				HostPath:      dev.CXLDevAFUPath,
-				ContainerPath: dev.CXLDevAFUPath,  
+				ContainerPath: dev.CXLDevAFUPath,
 				Permissions:   "rwm",
 			})
 			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User)
@@ -362,7 +362,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
 				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
 				HostPath:      dev.CXLDevAFUPath,
-				ContainerPath: dev.CXLDevAFUPath,  
+				ContainerPath: dev.CXLDevAFUPath,
 				ReadOnly:      false,
 			})
 			// if this device supports qdma, assign the qdma node to pod too
