@@ -28,11 +28,13 @@ import (
 )
 
 const (
-	SysfsDevices   = "/sys/bus/pci/devices"
-	CXLDevDir      = "/dev/cxl"
-	CXLPrefix1     = "afu"
-	CXLPrefix2     = ".0m"
-	CXLCardSTR     = "card"
+	SysfsDevices = "/sys/bus/pci/devices"
+	// OCP-CAPI-changes
+	CXLDevDir  = "/dev/cxl"
+	CXLPrefix1 = "afu"
+	CXLPrefix2 = ".0m"
+	CXLCardSTR = "card"
+	// end of OCP-CAPI-changes
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
 	QdmaPrefix     = "/dev/xfpga"
@@ -80,7 +82,7 @@ type Device struct {
 	deviceID      string //devid of the user pf
 	Healthy       string
 	Nodes         *Pairs
-	CXLDevAFUPath string
+	CXLDevAFUPath string // OCP-CAPI-changes
 }
 
 func GetInstance(DBDF string) (string, error) {
@@ -266,7 +268,7 @@ func GetDevices() ([]Device, error) {
 				deviceID:      devid,
 				Healthy:       healthy,
 				Nodes:         pairMap[DBD],
-				CXLDevAFUPath: "",
+				CXLDevAFUPath: "", // OCP-CAPI-changes
 			})
 		} else if IsMgmtPf(pciID) { //mgmt pf
 			// CAPI2 mode physical slot -- XRT modification seems to have added a mgmt_pf
@@ -299,7 +301,7 @@ func GetDevices() ([]Device, error) {
 					deviceID:      devid,
 					Healthy:       healthy,
 					Nodes:         pairMap[DBD],
-					CXLDevAFUPath: "",
+					CXLDevAFUPath: "", // OCP-CAPI-changes
 				})
 			} else { // original code unchanged
 				// get mgmt instance
@@ -340,6 +342,7 @@ func GetDevices() ([]Device, error) {
 				}
 				devid := content
 
+				// OCP-CAPI-changes
 				// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
 				SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
 				var CXLDevFullPath string
@@ -397,6 +400,7 @@ func GetDevices() ([]Device, error) {
 						})
 					}
 				}
+				// end of OCP-CAPI-changes
 			}
 		}
 	}

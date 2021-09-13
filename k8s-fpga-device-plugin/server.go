@@ -119,7 +119,7 @@ func (m *FPGADevicePlugin) checkDeviceUpdate(n map[string]map[string]Device) {
 		m.devices[aDevType] = aDevices
 		m.servers[aDevType] = devicePluginServer
 		go func(aDevType string, aDevices map[string]Device, name string) {
-			log.Debugf("Serve function called from checkDeviceUpdate")
+			log.Debugf("Serve function called from checkDeviceUpdate") // OCP-CAPI-changes
 			if err := m.servers[aDevType].Serve(name); err != nil {
 				log.Println("Could not contact Kubelet, Exit. Did you enable the device plugin feature gate?")
 				os.Exit(1)
@@ -208,7 +208,7 @@ func (m *FPGADevicePluginServer) Start() error {
 	m.server = grpc.NewServer()
 	pluginapi.RegisterDevicePluginServer(m.server, m)
 
-	log.Debugf("Serve function called from Start")
+	log.Debugf("Serve function called from Start") // OCP-CAPI-changes
 	go m.server.Serve(sock)
 
 	// Wait for the server to start
@@ -322,47 +322,31 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 			// When containers are on top of VM, it is possible only user PF is assigned
 			// to VM, so the Mgmt is empty. Don't add it to cgroup in that case
 			if dev.Nodes.Mgmt != "" {
-				log.Debugf("Mgmt Devices ContainerPath: %s", dev.Nodes.Mgmt)
+				log.Debugf("Mgmt Devices ContainerPath: %s", dev.Nodes.Mgmt) // OCP-CAPI-changes
 				cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
 					HostPath:      dev.Nodes.Mgmt,
 					ContainerPath: dev.Nodes.Mgmt,
 					Permissions:   "rwm",
 				})
-				log.Debugf("Mgmt Mount ContainerPath: %s", dev.Nodes.Mgmt)
+				log.Debugf("Mgmt Mount ContainerPath: %s", dev.Nodes.Mgmt) // OCP-CAPI-changes
 				cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
 					HostPath:      dev.Nodes.Mgmt,
 					ContainerPath: dev.Nodes.Mgmt,
 					ReadOnly:      false,
 				})
 			}
-			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User)
-			//cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
-			//	HostPath:      dev.Nodes.User,
-			//	ContainerPath: dev.Nodes.User,
-			//	Permissions:   "rwm",
-			//})
+			// OCP-CAPI-changes
+			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User) // OCP-CAPI-changes
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
-				//HostPath:      path.Join("/var/run/udev/data/+pci:", id),
-				//ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
-				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
-				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
-				HostPath:      dev.CXLDevAFUPath,
-				ContainerPath: dev.CXLDevAFUPath,
+				HostPath:      dev.CXLDevAFUPath, // OCP-CAPI-changes
+				ContainerPath: dev.CXLDevAFUPath, // OCP-CAPI-changes
 				Permissions:   "rwm",
 			})
-			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User)
-			//cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
-			//	HostPath:      dev.Nodes.User,
-			//	ContainerPath: dev.Nodes.User,
-			//	ReadOnly:      false,
-			//})
+
+			log.Debugf("User Mount ContainerPath: %s", dev.Nodes.User) // OCP-CAPI-changes
 			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
-				//HostPath:      path.Join("/var/run/udev/data/+pci:", id),
-				//ContainerPath: path.Join("/var/run/udev/data/+pci:", id),
-				//HostPath:      path.Join("/dev/cxl/afu0.0m"),
-				//ContainerPath: path.Join("/dev/cxl/afu0.0m"),
-				HostPath:      dev.CXLDevAFUPath,
-				ContainerPath: dev.CXLDevAFUPath,
+				HostPath:      dev.CXLDevAFUPath, // OCP-CAPI-changes
+				ContainerPath: dev.CXLDevAFUPath, // OCP-CAPI-changes
 				ReadOnly:      false,
 			})
 			// if this device supports qdma, assign the qdma node to pod too
@@ -378,7 +362,7 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 					ReadOnly:      false,
 				})
 			}
-			log.Printf("Receiving request %s - DONE", id)
+			log.Printf("Receiving request %s - DONE", id) // OCP-CAPI-changes
 		}
 		response.ContainerResponses = append(response.ContainerResponses, cres)
 	}

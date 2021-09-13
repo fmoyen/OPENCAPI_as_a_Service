@@ -1,7 +1,7 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus"
+	log "github.com/Sirupsen/logrus" // OCP-CAPI-changes
 	"github.com/fsnotify/fsnotify"
 	"os"
 	"os/signal"
@@ -11,14 +11,16 @@ func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
+	// OCP-CAPI-changes
 	} else {
 		log.Println("watcher created. ERR=", err)
+	// end of OCP-CAPI-changes
 	}
 
 	for _, f := range files {
 		err = watcher.Add(f)
 		if err != nil {
-			log.Println("watcher.Add failure for file: ", f)
+			log.Println("watcher.Add failure for file: ", f) // OCP-CAPI-changes
 			watcher.Close()
 			return nil, err
 		}
