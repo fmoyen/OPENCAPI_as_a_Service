@@ -176,6 +176,7 @@ func GetDevices() ([]Device, error) {
 			return nil, err
 		}
 		// OCP-CAPI-changes
+		// If card vendorID is not IBMVendorID, then do not get device (do nothing) for this device
 		if strings.EqualFold(vendorID, IBMVendorID) != true {
 			continue
 		}
