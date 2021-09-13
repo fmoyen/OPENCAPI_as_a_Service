@@ -27,6 +27,7 @@ import (
 	pluginapi "k8s.io/kubernetes/pkg/kubelet/apis/deviceplugin/v1beta1"
 )
 
+//#################################################################################################################################
 const (
 	SysfsDevices = "/sys/bus/pci/devices"
 	// OCP-CAPI-changes
@@ -85,6 +86,7 @@ type Device struct {
 	CXLDevAFUPath string // OCP-CAPI-changes
 }
 
+//#################################################################################################################################
 func GetInstance(DBDF string) (string, error) {
 	strArray := strings.Split(DBDF, ":")
 	domain, err := strconv.ParseUint(strArray[0], 16, 16)
@@ -108,6 +110,7 @@ func GetInstance(DBDF string) (string, error) {
 	return strconv.FormatUint(ret, 10), nil
 }
 
+//#################################################################################################################################
 func GetFileNameFromPrefix(dir string, prefix string) (string, error) {
 	userFiles, err := ioutil.ReadDir(dir)
 	if err != nil {
@@ -124,6 +127,7 @@ func GetFileNameFromPrefix(dir string, prefix string) (string, error) {
 	return "", nil
 }
 
+//#################################################################################################################################
 func GetFileContent(file string) (string, error) {
 	if buf, err := ioutil.ReadFile(file); err != nil {
 		return "", fmt.Errorf("Can't read file %s", file)
@@ -133,6 +137,7 @@ func GetFileContent(file string) (string, error) {
 	}
 }
 
+//#################################################################################################################################
 //Prior to 2018.3 release, Xilinx FPGA has mgmt PF as func 1 and user PF
 //as func 0. The func numbers of the 2 PFs are swapped after 2018.3 release.
 //The FPGA device driver in (and after) 2018.3 release creates sysfs file --
@@ -149,40 +154,49 @@ func FileExist(fname string) bool {
 	return true
 }
 
+//#################################################################################################################################
 func IsMgmtPf(pciID string) bool {
 	fname := path.Join(SysfsDevices, pciID, MgmtFile)
 	return FileExist(fname)
 }
 
+//#################################################################################################################################
 func IsUserPf(pciID string) bool {
 	fname := path.Join(SysfsDevices, pciID, UserFile)
 	return FileExist(fname)
 }
 
+//#################################################################################################################################
 func GetDevices() ([]Device, error) {
 	var devices []Device
 	pairMap := make(map[string]*Pairs)
+
+	// get the names of the files included in the SysfsDevices directory (such as /sys/bus/pci/devices/0003:01:00.0)
 	pciFiles, err := ioutil.ReadDir(SysfsDevices)
 	if err != nil {
 		return nil, fmt.Errorf("Can't read folder %s", SysfsDevices)
 	}
 
+	//=============================================================================================================================
 	for _, pciFile := range pciFiles {
 		pciID := pciFile.Name()
 
+		// Get the vendor ID of the card
 		fname := path.Join(SysfsDevices, pciID, VendorFile)
 		vendorID, err := GetFileContent(fname)
 		if err != nil {
 			return nil, err
 		}
-		// OCP-CAPI-changes
+
 		// If card vendorID is not IBMVendorID, then do not get device (do nothing) for this device
+		// (future improvement: build a better filter to get only CAPI/OpenCAPI cards)
 		if strings.EqualFold(vendorID, IBMVendorID) != true {
 			continue
 		}
-		// end of OCP-CAPI-changes
 
+		// if pciID = "0003:01:00.0", DBD = "0003:01:00" (removing the last 2 caracters)
 		DBD := pciID[:len(pciID)-2]
+		// if pairMap[DBD] does not exist, create it empty
 		if _, ok := pairMap[DBD]; !ok {
 			pairMap[DBD] = &Pairs{
 				Mgmt: "",
@@ -196,6 +210,9 @@ func GetDevices() ([]Device, error) {
 		// For containers deployed on top of VM, there may be only user PF
 		// available(mgmt PF is not assigned to the VM)
 		// so mgmt in Pair may be empty
+
+		//-------------------------------------------------------------------------------------------------------------------------
+		// user_pf never occurs if CAPI/OpenCAPI Device
 		if IsUserPf(pciID) { //user pf
 			userDBDF := pciID
 			romFolder, err := GetFileNameFromPrefix(path.Join(SysfsDevices, pciID), ROMSTR)
@@ -269,49 +286,27 @@ func GetDevices() ([]Device, error) {
 				Nodes:         pairMap[DBD],
 				CXLDevAFUPath: "", // OCP-CAPI-changes
 			})
-		} else if IsMgmtPf(pciID) { //mgmt pf
-			// CAPI2 mode physical slot -- XRT modification seems to have added a mgmt_pf
-			if strings.EqualFold(vendorID, IBMVendorID) {
-				//healthy := "Unhealthy" // this is the capi2 phys slot - shouldn't be allocatable
-				healthy := pluginapi.Healthy
-
-				// get dsa version = fill it with boardname
-				fname = path.Join(SysfsDevices, pciID, BoardNameFile)
-				content, err := GetFileContent(fname)
-				if err != nil {
-					return nil, err
-				}
-				dsaVer := content
-
-				dsaTs := CAPI2_P_ID // timestamp
-				userDBDF := pciID
-				// get device id => should be CAPI2_P_ID
-				fname = path.Join(SysfsDevices, pciID, DeviceFile)
-				content, err = GetFileContent(fname)
-				if err != nil {
-					return nil, err
-				}
-				devid := content
-				devices = append(devices, Device{
-					index:         strconv.Itoa(len(devices) + 1),
-					shellVer:      dsaVer,
-					timestamp:     dsaTs,
-					DBDF:          userDBDF,
-					deviceID:      devid,
-					Healthy:       healthy,
-					Nodes:         pairMap[DBD],
-					CXLDevAFUPath: "", // OCP-CAPI-changes
-				})
-			} else { // original code unchanged
-				// get mgmt instance
-				fname = path.Join(SysfsDevices, pciID, InstanceFile)
-				content, err := GetFileContent(fname)
-				if err != nil {
-					return nil, err
-				}
-				pairMap[DBD].Mgmt = MgmtPrefix + content
+		}
+		
+		//-------------------------------------------------------------------------------------------------------------------------
+		// mgmt_pf never occurs if CAPI/OpenCAPI Device
+		// unless if XRT (Xilinx Runtime) is installed (then CAPI2 device may have a mgmt_pf file)
+		else if IsMgmtPf(pciID) { //mgmt pf
+			// get mgmt instance
+			fname = path.Join(SysfsDevices, pciID, InstanceFile)
+			content, err := GetFileContent(fname)
+			if err != nil {
+				return nil, err
 			}
-		} else { // CAPI2 mode virtual slot or OpenCAPI mode
+			pairMap[DBD].Mgmt = MgmtPrefix + content
+		}
+		
+		//-------------------------------------------------------------------------------------------------------------------------
+		// CAPI2 mode virtual slot or OpenCAPI mode
+		else {
+
+			// Testing only if IBMVendorID => it needs to be improved to really test if CAPI or OpenCAPI card
+			// (IBMvendorID has already been tested above => we cannot be here if vendorID != IBMvendorID)
 			if strings.EqualFold(vendorID, IBMVendorID) {
 				userDBDF := pciID
 				healthy := pluginapi.Healthy // DBG: may need more investigation
@@ -403,9 +398,12 @@ func GetDevices() ([]Device, error) {
 			}
 		}
 	}
+
+	// The function returns an array of Device structures ( []Device )
 	return devices, nil
 }
 
+//#################################################################################################################################
 /*
 func main() {
 	devices, err := GetDevices()
