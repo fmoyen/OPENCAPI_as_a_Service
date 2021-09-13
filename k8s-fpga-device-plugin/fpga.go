@@ -175,13 +175,11 @@ func GetDevices() ([]Device, error) {
 		if err != nil {
 			return nil, err
 		}
-		if strings.EqualFold(vendorID, XilinxVendorID) != true &&
-			strings.EqualFold(vendorID, IBMVendorID) != true &&
-			strings.EqualFold(vendorID, AristaVendorID) != true &&
-			strings.EqualFold(vendorID, AWS_ID) != true &&
-			strings.EqualFold(vendorID, ADVANTECH_ID) != true {
+		// OCP-CAPI-changes
+		if strings.EqualFold(vendorID, IBMVendorID) != true {
 			continue
 		}
+		// end of OCP-CAPI-changes
 
 		DBD := pciID[:len(pciID)-2]
 		if _, ok := pairMap[DBD]; !ok {
