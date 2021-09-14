@@ -31,10 +31,13 @@ import (
 const (
 	SysfsDevices = "/sys/bus/pci/devices"
 	// OCP-CAPI-changes
-	CXLDevDir  = "/dev/cxl"
-	CXLPrefix1 = "afu"
-	CXLPrefix2 = ".0m"
-	CXLCardSTR = "card"
+	CXLDevDir    = "/dev/cxl"
+	CXLPrefix1   = "afu"
+	CXLPrefix2   = ".0m"
+	CXLCardSTR   = "card"
+	IBMVendorID  = "0x1014"
+	CXLDeviceID  = "0x0477"
+	OCXLDeviceID = "0x062b"
 	// end of OCP-CAPI-changes
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
@@ -56,7 +59,6 @@ const (
 	DeviceFile     = "device"
 	SubDeviceFile  = "subsystem_device"
 	XilinxVendorID = "0x10ee"
-	IBMVendorID    = "0x1014"
 	ADVANTECH_ID   = "0x13fe"
 	AWS_ID         = "0x1d0f"
 	AristaVendorID = "0x3475"
@@ -188,13 +190,25 @@ func GetDevices() ([]Device, error) {
 			return nil, err
 		}
 
+		// Get the device ID (CAPI=0x477, OpenCAPI=0x062b) of the card
+		fdevice := path.Join(SysfsDevices, pciID, DeviceFile)
+		deviceID, err := GetFileContent(fdevice)
+		if err != nil {
+			return nil, err
+		}
+
 		// If card vendorID is not IBMVendorID, then do not get device (do nothing) for this device
+		// if card vendorID is IBMVendorID, but deviceID is not CXLDeviceID and is not OCXLDeviceID, then do not get device (do nothing) for this device
 		// (future improvement: build a better filter to get only CAPI/OpenCAPI cards)
-		if strings.EqualFold(vendorID, IBMVendorID) != true {
+		if strings.EqualFold(vendorID, IBMVendorID) != true ||
+			(strings.EqualFold(deviceID, CXLDeviceID) != true && strings.EqualFold(deviceID, OCXLDeviceID) != true) {
 			continue
 		}
 
-		// if pciID = "0003:01:00.0", DBD = "0003:01:00" (removing the last 2 caracters)
+		// If we get here, it means we found a CAPI or OpenCAPI card
+		fmt.Println("Found CAPI/OpenCAPI card:", pciID, " (vendor ID=", vendorID, ", device ID=", deviceID, ")")
+
+		// if pciID = "0003:01:00.0", DBD = "0003:01:00" (removing the last 2 characters)
 		DBD := pciID[:len(pciID)-2]
 		// if pairMap[DBD] does not exist, create it empty
 		if _, ok := pairMap[DBD]; !ok {
@@ -286,6 +300,7 @@ func GetDevices() ([]Device, error) {
 				Nodes:         pairMap[DBD],
 				CXLDevAFUPath: "", // OCP-CAPI-changes
 			})
+
 			//-------------------------------------------------------------------------------------------------------------------------
 			// mgmt_pf never occurs if CAPI/OpenCAPI Device
 			// unless if XRT (Xilinx Runtime) is installed (then CAPI2 device may have a mgmt_pf file)
@@ -297,101 +312,97 @@ func GetDevices() ([]Device, error) {
 				return nil, err
 			}
 			pairMap[DBD].Mgmt = MgmtPrefix + content
+
 			//-------------------------------------------------------------------------------------------------------------------------
 			// CAPI2 mode virtual slot or OpenCAPI mode
 		} else {
+			userDBDF := pciID
+			healthy := pluginapi.Healthy // DBG: may need more investigation
 
-			// Testing only if IBMVendorID => it needs to be improved to really test if CAPI or OpenCAPI card
-			// (IBMvendorID has already been tested above => we cannot be here if vendorID != IBMvendorID)
-			if strings.EqualFold(vendorID, IBMVendorID) {
-				userDBDF := pciID
-				healthy := pluginapi.Healthy // DBG: may need more investigation
+			// get dsa version = fill it with image_loaded = Factory
+			//fname = path.Join(SysfsDevices, pciID, ocxlFolder, ImageLoadFile)
 
-				// get dsa version = fill it with image_loaded = Factory
-				//fname = path.Join(SysfsDevices, pciID, ocxlFolder, ImageLoadFile)
+			//content, err := GetFileContent(fname)
+			content := ""
 
-				//content, err := GetFileContent(fname)
-				content := ""
+			// get Subsystem device id : capi2 + 0x668 = 9H7 card > fill it in dsaTs
+			// get Subsystem device id : Ocapi + 0x666 = 9H7 card > fill it in dsaTs
 
-				// get Subsystem device id : capi2 + 0x668 = 9H7 card > fill it in dsaTs
-				// get Subsystem device id : Ocapi + 0x666 = 9H7 card > fill it in dsaTs
-
-				// get Subsystem device id (card_number) fill it in dsaTs
-				fname = path.Join(SysfsDevices, pciID, SubDeviceFile)
-				content, err = GetFileContent(fname)
-				if err != nil {
-					return nil, err
-				}
-				dsaTs := content
-
-				// get device id
-				fname = path.Join(SysfsDevices, pciID, DeviceFile)
-				content, err = GetFileContent(fname)
-				if err != nil {
-					return nil, err
-				}
-				devid := content
-
-				// OCP-CAPI-changes
-				// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
-				SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
-				var CXLDevFullPath string
-				if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
-					card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
-					capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
-					CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
-				} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
-					CXLDevFullPath = ""
-				}
-
-				if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
-					content := "ad9h7_capi2"
-					dsaVer := content
-					devices = append(devices, Device{
-						index:         strconv.Itoa(len(devices) + 1),
-						shellVer:      dsaVer,
-						timestamp:     dsaTs,
-						DBDF:          userDBDF,
-						deviceID:      devid,
-						Healthy:       healthy,
-						Nodes:         pairMap[DBD],
-						CXLDevAFUPath: CXLDevFullPath,
-					})
-				} else if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
-					content := "u200_capi2"
-					dsaVer := content
-					devices = append(devices, Device{
-						index:         strconv.Itoa(len(devices) + 1),
-						shellVer:      dsaVer,
-						timestamp:     dsaTs,
-						DBDF:          userDBDF,
-						deviceID:      devid,
-						Healthy:       healthy,
-						Nodes:         pairMap[DBD],
-						CXLDevAFUPath: CXLDevFullPath,
-					})
-				} else if strings.EqualFold(devid, OpencapiID) && strings.EqualFold(dsaTs, OCAPI_9H7) {
-					content := "ad9h7_ocapi"
-					dsaVer := content
-					// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
-					//  so if this directory doesn't exist => register the phys slot as not healthy
-					_, err := os.Stat(path.Join(SysfsDevices, pciID, OcxlPrefix1+pciID, OcxlPrefix2))
-					if os.IsNotExist(err) {
-						// this logs the healthy physical slot - if IsExist used then log unhealthy virtual slot!!
-						devices = append(devices, Device{
-							index:         strconv.Itoa(len(devices) + 1),
-							shellVer:      dsaVer,
-							timestamp:     dsaTs,
-							DBDF:          userDBDF,
-							deviceID:      devid,
-							Healthy:       healthy,
-							Nodes:         pairMap[DBD],
-							CXLDevAFUPath: "",
-						})
-					}
-				}
-				// end of OCP-CAPI-changes
+			// get Subsystem device id (card_number) fill it in dsaTs
+			fname = path.Join(SysfsDevices, pciID, SubDeviceFile)
+			content, err = GetFileContent(fname)
+			if err != nil {
+				return nil, err
 			}
+			dsaTs := content
+
+			// get device id
+			fname = path.Join(SysfsDevices, pciID, DeviceFile)
+			content, err = GetFileContent(fname)
+			if err != nil {
+				return nil, err
+			}
+			devid := content
+
+			// OCP-CAPI-changes
+			// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
+			SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
+			var CXLDevFullPath string
+			if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
+				card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
+				capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
+				CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
+			} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
+				CXLDevFullPath = ""
+			}
+
+			if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
+				content := "ad9h7_capi2"
+				dsaVer := content
+				devices = append(devices, Device{
+					index:         strconv.Itoa(len(devices) + 1),
+					shellVer:      dsaVer,
+					timestamp:     dsaTs,
+					DBDF:          userDBDF,
+					deviceID:      devid,
+					Healthy:       healthy,
+					Nodes:         pairMap[DBD],
+					CXLDevAFUPath: CXLDevFullPath,
+				})
+			} else if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
+				content := "u200_capi2"
+				dsaVer := content
+				devices = append(devices, Device{
+					index:         strconv.Itoa(len(devices) + 1),
+					shellVer:      dsaVer,
+					timestamp:     dsaTs,
+					DBDF:          userDBDF,
+					deviceID:      devid,
+					Healthy:       healthy,
+					Nodes:         pairMap[DBD],
+					CXLDevAFUPath: CXLDevFullPath,
+				})
+			} else if strings.EqualFold(devid, OpencapiID) && strings.EqualFold(dsaTs, OCAPI_9H7) {
+				content := "ad9h7_ocapi"
+				dsaVer := content
+				// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
+				//  so if this directory doesn't exist => register the phys slot as not healthy
+				_, err := os.Stat(path.Join(SysfsDevices, pciID, OcxlPrefix1+pciID, OcxlPrefix2))
+				if os.IsNotExist(err) {
+					// this logs the healthy physical slot - if IsExist used then log unhealthy virtual slot!!
+					devices = append(devices, Device{
+						index:         strconv.Itoa(len(devices) + 1),
+						shellVer:      dsaVer,
+						timestamp:     dsaTs,
+						DBDF:          userDBDF,
+						deviceID:      devid,
+						Healthy:       healthy,
+						Nodes:         pairMap[DBD],
+						CXLDevAFUPath: "",
+					})
+				}
+			}
+			// end of OCP-CAPI-changes
 		}
 	}
 
