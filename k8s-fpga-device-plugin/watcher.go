@@ -1,20 +1,19 @@
 package main
 
 import (
-	log "github.com/Sirupsen/logrus" // OCP-CAPI-changes
-	"github.com/fsnotify/fsnotify"
 	"os"
 	"os/signal"
+
+	log "github.com/Sirupsen/logrus" // OCP-CAPI-changes
+	"github.com/fsnotify/fsnotify"
 )
 
 func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
-	// OCP-CAPI-changes
-	} else {
+	} else { // OCP_CAPI-changes
 		log.Println("watcher created. ERR=", err)
-	// end of OCP-CAPI-changes
 	}
 
 	for _, f := range files {

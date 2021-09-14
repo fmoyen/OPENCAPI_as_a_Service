@@ -286,12 +286,10 @@ func GetDevices() ([]Device, error) {
 				Nodes:         pairMap[DBD],
 				CXLDevAFUPath: "", // OCP-CAPI-changes
 			})
-		}
-		
-		//-------------------------------------------------------------------------------------------------------------------------
-		// mgmt_pf never occurs if CAPI/OpenCAPI Device
-		// unless if XRT (Xilinx Runtime) is installed (then CAPI2 device may have a mgmt_pf file)
-		else if IsMgmtPf(pciID) { //mgmt pf
+			//-------------------------------------------------------------------------------------------------------------------------
+			// mgmt_pf never occurs if CAPI/OpenCAPI Device
+			// unless if XRT (Xilinx Runtime) is installed (then CAPI2 device may have a mgmt_pf file)
+		} else if IsMgmtPf(pciID) { //mgmt pf
 			// get mgmt instance
 			fname = path.Join(SysfsDevices, pciID, InstanceFile)
 			content, err := GetFileContent(fname)
@@ -299,11 +297,9 @@ func GetDevices() ([]Device, error) {
 				return nil, err
 			}
 			pairMap[DBD].Mgmt = MgmtPrefix + content
-		}
-		
-		//-------------------------------------------------------------------------------------------------------------------------
-		// CAPI2 mode virtual slot or OpenCAPI mode
-		else {
+			//-------------------------------------------------------------------------------------------------------------------------
+			// CAPI2 mode virtual slot or OpenCAPI mode
+		} else {
 
 			// Testing only if IBMVendorID => it needs to be improved to really test if CAPI or OpenCAPI card
 			// (IBMvendorID has already been tested above => we cannot be here if vendorID != IBMvendorID)
