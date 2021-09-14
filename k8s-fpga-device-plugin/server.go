@@ -336,7 +336,8 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 				})
 			}
 			// OCP-CAPI-changes
-			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User) // OCP-CAPI-changes
+			log.Debugf("Hardware Device ContainerPath: %s", dev.CXLDevAFUPath) // OCP-CAPI-changes
+			log.Debugf("User Devices ContainerPath: %s", dev.Nodes.User)       // OCP-CAPI-changes
 			cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
 				HostPath:      dev.CXLDevAFUPath, // OCP-CAPI-changes
 				ContainerPath: dev.CXLDevAFUPath, // OCP-CAPI-changes
