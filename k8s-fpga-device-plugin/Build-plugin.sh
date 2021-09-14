@@ -67,10 +67,16 @@ echo "Pushing the docker image ${docker_repository}:latest to the docker hub"
 docker push ${docker_repository}:latest
 
 echo; echo "========================================================"
-echo "Next steps to be manually done with jarvice@kubclient1"
+echo "Next steps to be manually done with jarvice@kubclient1 (Nimbix Jarvice XE)"
 echo "cd $ScriptDir"
 echo "kubectl create -f fpga-device-plugin.yml"
 echo "kubectl get daemonset -A"
+echo
+echo "Or with root@ocphelper (Red Hat Openshift)"
+echo "cd $ScriptDir"
+echo "oc create -f fpga-device-plugin.yml"
+echo "oc get daemonset -A"
+
 
 echo; echo "========================================================"
 echo "Bye !"
