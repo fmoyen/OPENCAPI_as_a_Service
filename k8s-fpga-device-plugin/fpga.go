@@ -206,7 +206,7 @@ func GetDevices() ([]Device, error) {
 		}
 
 		// If we get here, it means we found a CAPI or OpenCAPI card
-		fmt.Println("Found CAPI/OpenCAPI card:", pciID, " (vendor ID=", vendorID, ", device ID=", deviceID, ")")
+		//fmt.Println("Found CAPI/OpenCAPI card:", pciID, " (vendor ID=", vendorID, ", device ID=", deviceID, ")")
 
 		// if pciID = "0003:01:00.0", DBD = "0003:01:00" (removing the last 2 characters)
 		DBD := pciID[:len(pciID)-2]
