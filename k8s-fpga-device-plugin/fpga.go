@@ -199,7 +199,6 @@ func GetDevices() ([]Device, error) {
 
 		// If card vendorID is not IBMVendorID, then do not get device (do nothing) for this device
 		// if card vendorID is IBMVendorID, but deviceID is not CXLDeviceID and is not OCXLDeviceID, then do not get device (do nothing) for this device
-		// (future improvement: build a better filter to get only CAPI/OpenCAPI cards)
 		if strings.EqualFold(vendorID, IBMVendorID) != true ||
 			(strings.EqualFold(deviceID, CXLDeviceID) != true && strings.EqualFold(deviceID, OCXLDeviceID) != true) {
 			continue
