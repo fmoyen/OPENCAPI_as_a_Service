@@ -29,16 +29,12 @@ import (
 
 //#################################################################################################################################
 const (
-	SysfsDevices = "/sys/bus/pci/devices"
-	// OCP-CAPI-changes
-	CXLDevDir    = "/dev/cxl"
-	CXLPrefix1   = "afu"
-	CXLPrefix2   = ".0m"
-	CXLCardSTR   = "card"
-	IBMVendorID  = "0x1014"
-	CXLDeviceID  = "0x0477"
-	OCXLDeviceID = "0x062b"
-	// end of OCP-CAPI-changes
+	SysfsDevices   = "/sys/bus/pci/devices"
+	CXLDevDir      = "/dev/cxl"
+	CXLPrefix1     = "afu"
+	CXLPrefix2     = ".0m"
+	CXLCardSTR     = "card"
+	IBMVendorID    = "0x1014"
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
 	QdmaPrefix     = "/dev/xfpga"
@@ -62,8 +58,8 @@ const (
 	ADVANTECH_ID   = "0x13fe"
 	AWS_ID         = "0x1d0f"
 	AristaVendorID = "0x3475"
-	CAPI2_P_ID     = "0x0632"
-	CAPI2_V_ID     = "0x0477"
+	CAPI2_P_ID     = "0x0477"
+	CAPI2_V_ID     = "0x0632"
 	OpencapiID     = "0x062b"
 	CAPI2_U200     = "0x0665"
 	CAPI2_9H3      = "0x0667"
@@ -198,9 +194,9 @@ func GetDevices() ([]Device, error) {
 		}
 
 		// If card vendorID is not IBMVendorID, then do not get device (do nothing) for this device
-		// if card vendorID is IBMVendorID, but deviceID is not CXLDeviceID and is not OCXLDeviceID, then do not get device (do nothing) for this device
+		// if card vendorID is IBMVendorID, but deviceID is not CAPI2_P_ID and is not OpencapiID, then do not get device (do nothing) for this device
 		if strings.EqualFold(vendorID, IBMVendorID) != true ||
-			(strings.EqualFold(deviceID, CXLDeviceID) != true && strings.EqualFold(deviceID, OCXLDeviceID) != true) {
+			(strings.EqualFold(deviceID, CAPI2_P_ID) != true && strings.EqualFold(deviceID, OpencapiID) != true) {
 			continue
 		}
 
@@ -355,7 +351,7 @@ func GetDevices() ([]Device, error) {
 				CXLDevFullPath = ""
 			}
 
-			if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
+			if strings.EqualFold(devid, CAPI2_P_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
 				content := "ad9h7_capi2"
 				dsaVer := content
 				devices = append(devices, Device{
@@ -368,7 +364,7 @@ func GetDevices() ([]Device, error) {
 					Nodes:         pairMap[DBD],
 					CXLDevAFUPath: CXLDevFullPath,
 				})
-			} else if strings.EqualFold(devid, CAPI2_V_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
+			} else if strings.EqualFold(devid, CAPI2_P_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
 				content := "u200_capi2"
 				dsaVer := content
 				devices = append(devices, Device{
