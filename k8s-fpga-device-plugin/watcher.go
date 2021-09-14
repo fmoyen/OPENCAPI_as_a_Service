@@ -12,9 +12,9 @@ func newFSWatcher(files ...string) (*fsnotify.Watcher, error) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
-	} else { // OCP_CAPI-changes
-		log.Println("watcher created. ERR=", err)
 	}
+
+	log.Println("watcher created. ERR=", err) // OCP_CAPI-changes
 
 	for _, f := range files {
 		err = watcher.Add(f)
