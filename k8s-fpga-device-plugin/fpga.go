@@ -66,15 +66,15 @@ const (
 // Map for CAPI/OpenCAPI subdevices
 // it is needed to include CAPI or OpenCAPI ID into the keys as some cards have the same SubID whenever they are CAPI or OpenCAPI
 var CardMap = map[string]string{
-	"0x0477_0x0665": "U200_capi2",
-	"0x0477_0x0669": "U50_capi2",
-	"0x0477_0x060f": "AD9V3_capi2",
-	"0x0477_0x0667": "AD9H3_capi2",
-	"0x0477_0x0668": "AD9H7_capi2",
-	"0x062b_0x060f": "AD9V3_ocapi",
-	"0x062b_0x0667": "AD9H3_ocapi",
-	"0x062b_0x0666": "AD9H7_ocapi",
-	"0x062b_0x066a": "BW250SOC_ocapi",
+	"0x0477_0x0665": "u200_capi2",
+	"0x0477_0x0669": "u50_capi2",
+	"0x0477_0x060f": "ad9v3_capi2",
+	"0x0477_0x0667": "ad9h3_capi2",
+	"0x0477_0x0668": "ad9h7_capi2",
+	"0x062b_0x060f": "ad9v3_ocapi",
+	"0x062b_0x0667": "ad9h3_ocapi",
+	"0x062b_0x0666": "ad9h7_ocapi",
+	"0x062b_0x066a": "bw250soc_ocapi",
 }
 
 type Pairs struct {
