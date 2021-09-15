@@ -61,11 +61,21 @@ const (
 	CAPI2_P_ID     = "0x0477"
 	CAPI2_V_ID     = "0x0632"
 	OpencapiID     = "0x062b"
-	CAPI2_U200     = "0x0665"
-	CAPI2_9H3      = "0x0667"
-	CAPI2_9H7      = "0x0668"
-	OCAPI_9H7      = "0x0666"
 )
+
+// Map for CAPI/OpenCAPI subdevices
+// it is needed to include CAPI or OpenCAPI ID into the keys as some cards have the same SubID whenever they are CAPI or OpenCAPI
+var CardMap = map[string]string{
+	"0x0477_0x0665": "U200_capi2",
+	"0x0477_0x0669": "U50_capi2",
+	"0x0477_0x060f": "AD9V3_capi2",
+	"0x0477_0x0667": "AD9H3_capi2",
+	"0x0477_0x0668": "AD9H7_capi2",
+	"0x062b_0x060f": "AD9V3_ocapi",
+	"0x062b_0x0667": "AD9H3_ocapi",
+	"0x062b_0x0666": "AD9H7_ocapi",
+	"0x062b_0x066a": "BW250SOC_ocapi",
+}
 
 type Pairs struct {
 	Mgmt string
@@ -201,7 +211,10 @@ func GetDevices() ([]Device, error) {
 		}
 
 		// If we get here, it means we found a CAPI or OpenCAPI card
+
+		//for debugging only as it will pollute the logs
 		//fmt.Println("Found CAPI/OpenCAPI card:", pciID, " (vendor ID=", vendorID, ", device ID=", deviceID, ")")
+		//end debug
 
 		// if pciID = "0003:01:00.0", DBD = "0003:01:00" (removing the last 2 characters)
 		DBD := pciID[:len(pciID)-2]
@@ -351,8 +364,10 @@ func GetDevices() ([]Device, error) {
 				CXLDevFullPath = ""
 			}
 
-			if strings.EqualFold(devid, CAPI2_P_ID) && strings.EqualFold(dsaTs, CAPI2_9H7) {
-				content := "ad9h7_capi2"
+			// CAPI2 case
+			if strings.EqualFold(devid, CAPI2_P_ID) {
+				fID := devid + "_" + dsaTs
+				content := CardMap[fID]
 				dsaVer := content
 				devices = append(devices, Device{
 					index:         strconv.Itoa(len(devices) + 1),
@@ -364,21 +379,11 @@ func GetDevices() ([]Device, error) {
 					Nodes:         pairMap[DBD],
 					CXLDevAFUPath: CXLDevFullPath,
 				})
-			} else if strings.EqualFold(devid, CAPI2_P_ID) && strings.EqualFold(dsaTs, CAPI2_U200) {
-				content := "u200_capi2"
-				dsaVer := content
-				devices = append(devices, Device{
-					index:         strconv.Itoa(len(devices) + 1),
-					shellVer:      dsaVer,
-					timestamp:     dsaTs,
-					DBDF:          userDBDF,
-					deviceID:      devid,
-					Healthy:       healthy,
-					Nodes:         pairMap[DBD],
-					CXLDevAFUPath: CXLDevFullPath,
-				})
-			} else if strings.EqualFold(devid, OpencapiID) && strings.EqualFold(dsaTs, OCAPI_9H7) {
-				content := "ad9h7_ocapi"
+
+				// OpenCAPI case
+			} else if strings.EqualFold(devid, OpencapiID) {
+				fID := devid + "_" + dsaTs
+				content := CardMap[fID]
 				dsaVer := content
 				// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
 				//  so if this directory doesn't exist => register the phys slot as not healthy
