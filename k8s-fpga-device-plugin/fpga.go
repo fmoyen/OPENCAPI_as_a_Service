@@ -32,9 +32,10 @@ const (
 	SysfsDevices   = "/sys/bus/pci/devices"
 	CXLDevDir      = "/dev/cxl"
 	OCXLDevDir     = "/dev/ocxl"
-	CXLPrefix      = "afu"
-	CXLPostfix     = ".0m"
+	CXLDevPrefix   = "afu"
+	CXLDevPostfix  = ".0m"
 	OCXLPrefix     = "ocxlfn."
+	OCXLDevPrefix  = "IBM,oc-snap."
 	CXLDirName     = "cxl"
 	OCXLDirName    = "ocxl"
 	CXLCardSTR     = "card"
@@ -86,14 +87,14 @@ type Pairs struct {
 }
 
 type Device struct {
-	index         string
-	shellVer      string
-	timestamp     string
-	DBDF          string // this is for user pf
-	deviceID      string //devid of the user pf
-	Healthy       string
-	Nodes         *Pairs
-	CXLDevAFUPath string
+	index            string
+	shellVer         string
+	timestamp        string
+	DBDF             string // this is for user pf
+	deviceID         string //devid of the user pf
+	Healthy          string
+	Nodes            *Pairs
+	CXL_OCXL_DevPath string
 }
 
 //#################################################################################################################################
@@ -301,14 +302,14 @@ func GetDevices() ([]Device, error) {
 			//so far, return Healthy
 			healthy := pluginapi.Healthy
 			devices = append(devices, Device{
-				index:         strconv.Itoa(len(devices) + 1),
-				shellVer:      dsaVer,
-				timestamp:     dsaTs,
-				DBDF:          userDBDF,
-				deviceID:      devid,
-				Healthy:       healthy,
-				Nodes:         pairMap[DBD],
-				CXLDevAFUPath: "",
+				index:            strconv.Itoa(len(devices) + 1),
+				shellVer:         dsaVer,
+				timestamp:        dsaTs,
+				DBDF:             userDBDF,
+				deviceID:         devid,
+				Healthy:          healthy,
+				Nodes:            pairMap[DBD],
+				CXL_OCXL_DevPath: "",
 			})
 
 			//-------------------------------------------------------------------------------------------------------------------------
@@ -354,35 +355,42 @@ func GetDevices() ([]Device, error) {
 			}
 			devid := content
 
-			// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
-			SysBusCXLPath := path.Join(SysfsDevices, pciID, CXLDirName)
-			var CXLDevFullPath string
-			if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
-				card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
-				capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
-				CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix+capiIDSTR+CXLPostfix)
-			} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
-				CXLDevFullPath = ""
-			}
-
 			// CAPI2 case
 			if strings.EqualFold(devid, CAPI2_P_ID) {
+
+				// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
+				SysBusCXLPath := path.Join(SysfsDevices, pciID, CXLDirName)
+				var CXLDevFullPath string
+				if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
+					card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
+					capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
+					CXLDevFullPath = path.Join(CXLDevDir, CXLDevPrefix+capiIDSTR+CXLDevPostfix)
+					//} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
+					//	CXLDevFullPath = ""
+				}
+
 				fID := devid + "_" + dsaTs
 				content := CardMap[fID]
 				dsaVer := content
+
+				//for debugging only as it will pollute the logs
+				fmt.Println("Registering CAPI2 card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", CXLDevFullPath, ")")
+				//end debug
+
 				devices = append(devices, Device{
-					index:         strconv.Itoa(len(devices) + 1),
-					shellVer:      dsaVer,
-					timestamp:     dsaTs,
-					DBDF:          userDBDF,
-					deviceID:      devid,
-					Healthy:       healthy,
-					Nodes:         pairMap[DBD],
-					CXLDevAFUPath: CXLDevFullPath,
+					index:            strconv.Itoa(len(devices) + 1),
+					shellVer:         dsaVer,
+					timestamp:        dsaTs,
+					DBDF:             userDBDF,
+					deviceID:         devid,
+					Healthy:          healthy,
+					Nodes:            pairMap[DBD],
+					CXL_OCXL_DevPath: CXLDevFullPath,
 				})
 
 				// OpenCAPI case
 			} else if strings.EqualFold(devid, OpencapiID) {
+
 				fID := devid + "_" + dsaTs
 				content := CardMap[fID]
 				dsaVer := content
@@ -400,19 +408,23 @@ func GetDevices() ([]Device, error) {
 				// (os.IsExist would not be an option as it would be false in any case when analysing an error coming from os.Stat function)
 				if !os.IsNotExist(err) {
 
+					// Build OpenCAPI device full path such as /dev/ocxl/IBM,oc-snap.0004:00:00.1.0
+					var OCXLDevFullPath string
+					OCXLDevFullPath = path.Join(OCXLDevDir, OCXLDevPrefix+devid)
+
 					//for debugging only as it will pollute the logs
-					//fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, ")")
+					fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", OCXLDevFullPath, ")")
 					//end debug
 
 					devices = append(devices, Device{
-						index:         strconv.Itoa(len(devices) + 1),
-						shellVer:      dsaVer,
-						timestamp:     dsaTs,
-						DBDF:          userDBDF,
-						deviceID:      devid,
-						Healthy:       healthy,
-						Nodes:         pairMap[DBD],
-						CXLDevAFUPath: "",
+						index:            strconv.Itoa(len(devices) + 1),
+						shellVer:         dsaVer,
+						timestamp:        dsaTs,
+						DBDF:             userDBDF,
+						deviceID:         devid,
+						Healthy:          healthy,
+						Nodes:            pairMap[DBD],
+						CXL_OCXL_DevPath: OCXLDevFullPath,
 					})
 				}
 			}
