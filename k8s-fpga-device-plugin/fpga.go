@@ -91,7 +91,7 @@ type Device struct {
 	deviceID      string //devid of the user pf
 	Healthy       string
 	Nodes         *Pairs
-	CXLDevAFUPath string // OCP-CAPI-changes
+	CXLDevAFUPath string
 }
 
 //#################################################################################################################################
@@ -306,7 +306,7 @@ func GetDevices() ([]Device, error) {
 				deviceID:      devid,
 				Healthy:       healthy,
 				Nodes:         pairMap[DBD],
-				CXLDevAFUPath: "", // OCP-CAPI-changes
+				CXLDevAFUPath: "",
 			})
 
 			//-------------------------------------------------------------------------------------------------------------------------
@@ -352,7 +352,6 @@ func GetDevices() ([]Device, error) {
 			}
 			devid := content
 
-			// OCP-CAPI-changes
 			// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
 			SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
 			var CXLDevFullPath string
@@ -400,7 +399,7 @@ func GetDevices() ([]Device, error) {
 				if !os.IsNotExist(err) {
 
 					//for debugging only as it will pollute the logs
-					fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, ")")
+					//fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, ")")
 					//end debug
 
 					devices = append(devices, Device{
@@ -415,7 +414,6 @@ func GetDevices() ([]Device, error) {
 					})
 				}
 			}
-			// end of OCP-CAPI-changes
 		}
 	}
 
