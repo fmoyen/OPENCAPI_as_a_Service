@@ -36,6 +36,7 @@ const (
 	CXLDevPostfix  = ".0m"
 	OCXLPrefix     = "ocxlfn."
 	OCXLDevPrefix  = "IBM,oc-snap."
+	OCXLDevPostfix = ".0"
 	CXLDirName     = "cxl"
 	OCXLDirName    = "ocxl"
 	CXLCardSTR     = "card"
@@ -410,7 +411,7 @@ func GetDevices() ([]Device, error) {
 
 					// Build OpenCAPI device full path such as /dev/ocxl/IBM,oc-snap.0004:00:00.1.0
 					var OCXLDevFullPath string
-					OCXLDevFullPath = path.Join(OCXLDevDir, OCXLDevPrefix+pciID)
+					OCXLDevFullPath = path.Join(OCXLDevDir, OCXLDevPrefix+pciID+OCXLDevPostfix)
 
 					//for debugging only as it will pollute the logs
 					fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", OCXLDevFullPath, ")")
