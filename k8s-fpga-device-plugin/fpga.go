@@ -34,13 +34,14 @@ const (
 	OCXLDevDir     = "/dev/ocxl"
 	CXLPrefix      = "afu"
 	CXLPostfix     = ".0m"
+	OCXLPrefix     = "ocxlfn."
+	CXLDirName     = "cxl"
+	OCXLDirName    = "ocxl"
 	CXLCardSTR     = "card"
 	IBMVendorID    = "0x1014"
 	MgmtPrefix     = "/dev/xclmgmt"
 	UserPrefix     = "/dev/dri"
 	QdmaPrefix     = "/dev/xfpga"
-	OcxlPrefix1    = "ocxlfn."
-	OcxlPrefix2    = "ocxl"
 	QDMASTR        = "dma.qdma.u"
 	UserPFKeyword  = "drm"
 	DRMSTR         = "renderD"
@@ -354,7 +355,7 @@ func GetDevices() ([]Device, error) {
 			devid := content
 
 			// Get CAPI card ID  (0 for card0, 1 for card1, etc) and then build CAPI device full path such as /dev/cxl/afu1.0m
-			SysBusCXLPath := path.Join(SysfsDevices, pciID, "cxl")
+			SysBusCXLPath := path.Join(SysfsDevices, pciID, CXLDirName)
 			var CXLDevFullPath string
 			if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
 				card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
@@ -389,7 +390,7 @@ func GetDevices() ([]Device, error) {
 				// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
 				//  so only registering if this directory exists
 
-				_, err := os.Stat(path.Join(SysfsDevices, pciID, OcxlPrefix1+pciID, OcxlPrefix2))
+				_, err := os.Stat(path.Join(SysfsDevices, pciID, OCXLPrefix+pciID, OCXLDirName))
 				// If directory exists, Stat does NOT return any error so:
 				//   -> IsNotExist(err) is false as err is NOT an error and so does NOT report that the directory exists
 				// If directory does not exist, Stat returns an error reporting that the directory does not exists so:
