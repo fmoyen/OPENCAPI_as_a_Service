@@ -375,7 +375,8 @@ func GetDevices() ([]Device, error) {
 				dsaVer := content
 
 				//for debugging only as it will pollute the logs
-				fmt.Println("Registering CAPI2 card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", CXLDevFullPath, ")")
+				// It could be a good idea to make the function loggin only once per device ID or use log.Debugf
+				//fmt.Println("Registering CAPI2 card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", CXLDevFullPath, ")")
 				//end debug
 
 				devices = append(devices, Device{
@@ -414,7 +415,8 @@ func GetDevices() ([]Device, error) {
 					OCXLDevFullPath = path.Join(OCXLDevDir, OCXLDevPrefix+pciID+OCXLDevPostfix)
 
 					//for debugging only as it will pollute the logs
-					fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", OCXLDevFullPath, ")")
+					// It could be a good idea to make the function loggin only once per device ID or use log.Debugf
+					//fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, "Device Dir=", OCXLDevFullPath, ")")
 					//end debug
 
 					devices = append(devices, Device{
