@@ -31,8 +31,9 @@ import (
 const (
 	SysfsDevices   = "/sys/bus/pci/devices"
 	CXLDevDir      = "/dev/cxl"
-	CXLPrefix1     = "afu"
-	CXLPrefix2     = ".0m"
+	OCXLDevDir     = "/dev/ocxl"
+	CXLPrefix      = "afu"
+	CXLPostfix     = ".0m"
 	CXLCardSTR     = "card"
 	IBMVendorID    = "0x1014"
 	MgmtPrefix     = "/dev/xclmgmt"
@@ -358,7 +359,7 @@ func GetDevices() ([]Device, error) {
 			if _, err := os.Stat(SysBusCXLPath); !os.IsNotExist(err) { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) exists  ==> CAPI Card
 				card_name, _ := GetFileNameFromPrefix(SysBusCXLPath, CXLCardSTR)
 				capiIDSTR := strings.TrimPrefix(card_name, CXLCardSTR)
-				CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix1+capiIDSTR+CXLPrefix2)
+				CXLDevFullPath = path.Join(CXLDevDir, CXLPrefix+capiIDSTR+CXLPostfix)
 			} else { // SysBusCXLPath (/sys/bus/pci/devices/<pciID>/cxl) does NOT exist  ==> NO-CAPI Card
 				CXLDevFullPath = ""
 			}
