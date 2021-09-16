@@ -385,11 +385,19 @@ func GetDevices() ([]Device, error) {
 				fID := devid + "_" + dsaTs
 				content := CardMap[fID]
 				dsaVer := content
+
 				// /sys/bus/pci/devices/0004:00:00.1/ocxl*/ocxl exists only for opencapi virtual slot
-				//  so if this directory doesn't exist => register the phys slot as not healthy
+				//  so only registering if this directory exists
+
 				_, err := os.Stat(path.Join(SysfsDevices, pciID, OcxlPrefix1+pciID, OcxlPrefix2))
-				if os.IsNotExist(err) { // true if err reports the file above does not exist
-					// this logs the healthy physical slot - if IsExist used then log unhealthy virtual slot!!
+				// If directory exists, Stat does NOT return any error so:
+				//   -> IsNotExist(err) is false as err is NOT an error and so does NOT report that the directory exists
+				// If directory does not exist, Stat returns an error reporting that the directory does not exists so:
+				//   -> IsNotExist(err) is true as err is an error reporting that the directory does not exist
+
+				// Testing below the opposite of os.IsNotExist in order to register only the device for which the directory exists
+				// (os.IsExist would not be an option as it would be false in any case when analysing an error coming from os.Stat function)
+				if !os.IsNotExist(err) {
 
 					//for debugging only as it will pollute the logs
 					fmt.Println("Registering OpenCAPI card:", pciID, " (Device ID=", devid, ", SubDevice ID=", dsaTs, ")")
