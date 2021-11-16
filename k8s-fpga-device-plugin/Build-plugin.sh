@@ -13,7 +13,7 @@ echo " - Run docker command docker build -t [docker-repository]:[docker-tag] . t
 echo " - Check the new generating daemonset docker image with command docker images"
 echo " - Push the new docker image to a public dockerhub repository,  if needed to push/pull from a private docker repository you can reference https://kubernetes.io/docs/concepts/containers/images/#using-a-private-registry"
 echo " - Change the containers image of fpga-device-plugin.yml to the new generating docker images (already done)"
-echo " - Use command kubectl create -f fpga-device-plugin.yml to create the new daemonset"
+echo " - Tell you how to use kubectl or oc commands to start the new device plugin"
 echo
 echo "This script will use the following dockerhub repository: $docker_repository"
 echo
