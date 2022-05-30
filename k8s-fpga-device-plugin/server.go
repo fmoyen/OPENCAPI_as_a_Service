@@ -350,6 +350,22 @@ func (m *FPGADevicePluginServer) Allocate(ctx context.Context, req *pluginapi.Al
 				ContainerPath: dev.CXL_OCXL_DevPath,
 				ReadOnly:      false,
 			})
+
+			// Building the path of the card directory the POD needs to RW-mount
+			// Example: id = "0004:00:00.1"
+			// 0004:00:00.1 -> /sys/devices/pci0004:00
+			Suffix := id[:len(id)-5]
+			RWDirPath := path.Join("/sys/devices", "pci"+Suffix)
+			log.Debugf("Path of the card directory the POD needs to RW-mount: %s", RWDirPath)
+
+			// RW-Mount the Volume
+			log.Debugf("Mounting %s", RWDirPath)
+			cres.Mounts = append(cres.Mounts, &pluginapi.Mount{
+				HostPath:      RWDirPath,
+				ContainerPath: RWDirPath,
+				ReadOnly:      false,
+			})
+
 			// if this device supports qdma, assign the qdma node to pod too
 			if dev.Nodes.Qdma != "" {
 				cres.Devices = append(cres.Devices, &pluginapi.DeviceSpec{
